@@ -79,7 +79,7 @@ CREATE TABLE cour_equipment (
     name VARCHAR(100) NOT NULL,
     cour_id INT,
     equipment_id INT,
-    FOREIGN KEY (cour_id) REFERENCES cours(id),
+    FOREIGN KEY (cour_id) REFERENCES cours(id) ON DELETE CASCADE,
     FOREIGN KEY (equipment_id) REFERENCES equipments(id)
 );
 
@@ -88,10 +88,11 @@ CREATE TABLE cour_time (
     id INT PRIMARY KEY AUTO_INCREMENT,
     day VARCHAR(20) NOT NULL,
     start_time TIME NOT NULL,
-    time_in_munites INT NOT NULL,
+    time_in_minutes INT NOT NULL,
     cour_id INT,
-    FOREIGN KEY (cour_id) REFERENCES cours(id)
+    FOREIGN KEY (cour_id) REFERENCES cours(id) ON DELETE CASCADE
 );
+
 
 
 -- Insert data
@@ -132,7 +133,7 @@ INSERT INTO cours (name, category_id, max) VALUES
 ('Spin Class', 2, 25),
 ('CrossFit Training', 3, 12);
 
-INSERT INTO cour_time (day, start_time, time_in_munites, cour_id) VALUES
+INSERT INTO cour_time (day, start_time, time_in_minutes, cour_id) VALUES
 ('Monday', '08:00:00', 60, 1),
 ('Monday', '18:00:00', 45, 2),
 ('Tuesday', '07:00:00', 90, 3),

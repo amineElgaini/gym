@@ -26,40 +26,22 @@ function getCours() {
         }
     }
 
-    return $cours;
+    return ["status" => "success", "data" => $cours];
 }
 
-// ===== Get single equipment by ID =====
-// function getEquipement($id) {
-//     global $conn;
-//     $stmt = $conn->prepare("SELECT * FROM equipements WHERE id=?");
-//     $stmt->bind_param("i", $id);
-//     $stmt->execute();
-//     $result = $stmt->get_result();
-//     return $result->fetch_assoc();
-// }
+function deleteCour($id)
+{
+    global $conn;
+    try {
 
-// // ===== Add new equipment =====
-// function addEquipement($nom, $type, $quantite, $etat) {
-//     global $conn;
-//     $stmt = $conn->prepare("INSERT INTO equipements (nom, type, quantite, etat) VALUES (?, ?, ?, ?)");
-//     $stmt->bind_param("ssis", $nom, $type, $quantite, $etat);
-//     return $stmt->execute();
-// }
+        $stmt = $conn->prepare("DELETE FROM cours WHERE id = ?");
+        $stmt->bind_param("i", $id);
+        $stmt->execute();
 
-// // ===== Update equipment =====
-// function updateEquipement($id, $nom, $type, $quantite, $etat) {
-//     global $conn;
-//     $stmt = $conn->prepare("UPDATE equipements SET nom=?, type=?, quantite=?, etat=? WHERE id=?");
-//     $stmt->bind_param("ssisi", $nom, $type, $quantite, $etat, $id);
-//     return $stmt->execute();
-// }
-
-// // ===== Delete equipment =====
-// function deleteEquipement($id) {
-//     global $conn;
-//     $stmt = $conn->prepare("DELETE FROM equipements WHERE id=?");
-//     $stmt->bind_param("i", $id);
-//     return $stmt->execute();
-// }
+        return ["status" => "success", "message" => "Cour deleted successfully"];
+    } catch (Exception $e) {
+        error_log("DeleteCour Error: " . $e->getMessage());
+        return ["status" => "error", "message" => "Failed to delete cour"];
+    }
+}
 ?>
