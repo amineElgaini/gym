@@ -249,49 +249,163 @@ if (!isset($_SESSION['user_id'])) {
         }
 
         // Course Functions
-        function viewCour(cour) {
+        // Fetch course details by ID
+        async function getCourDetail(id) {
+            try {
+                const res = await fetch(`./../logic/cour_api.php?id=${id}`);
+                const data = await res.json();
+                return data.data;
+
+            } catch (err) {
+                console.error("Failed to fetch course detail:", err);
+                return null;
+            }
+        }
+
+        // Render course details in the modal
+        function renderCourDetail(data) {
+            console.log("d", data);
+            
             const content = document.getElementById('viewCourContent');
 
-            fetch('./../logic/cour_api.php?id=' + cour.id)
+            // Equipment list
+            let equipmentList = 'None';
+            if (data.cour_equipment.length > 0) {
+                equipmentList = '<ul>' + data.cour_equipment.map(eq =>
+                    `<li>
+                <strong>${eq.name}</strong> | Type: ${eq.type} | Status: ${eq.status}
+            </li>`
+                ).join('') + '</ul>';
+            }
+
+            // Time slots
+            let timeList = '';
+            if (data.cour_time.length > 0) {
+                timeList = '<ul class="space-y-2">';
+                data.cour_time.forEach(slot => {
+                    timeList += `
+                <li id="timeSlot-${slot.id}" class="flex items-center justify-between border p-2 rounded">
+                    <span>${slot.day} | ${slot.start_time} | ${slot.time_in_minutes} min</span>
+                    <button onclick="deleteTimeSlot(${slot.id})" 
+                            class="bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600 text-sm">
+                        Delete
+                    </button>
+                </li>
+            `;
+                });
+                timeList += '</ul>';
+            }
+
+            // Add new time slot form
+            timeList += `
+        <div class="mt-4 flex flex-wrap space-x-2 items-center">
+            <select id="newDaySelect" class="border px-2 py-1 rounded flex-shrink-0">
+                <option value="">Select Day</option>
+                <option value="Monday">Monday</option>
+                <option value="Tuesday">Tuesday</option>
+                <option value="Wednesday">Wednesday</option>
+                <option value="Thursday">Thursday</option>
+                <option value="Friday">Friday</option>
+                <option value="Saturday">Saturday</option>
+                <option value="Sunday">Sunday</option>
+            </select>
+
+            <input type="time" id="newStartTime" placeholder="Start Time" class="border px-2 py-1 rounded flex-shrink-0" />
+            <input type="number" id="newDuration" placeholder="Duration (minutes)" class="border px-2 py-1 rounded flex-shrink-0" />
+            <button onclick="addTimeSlot(${data.cour.id})" class="bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600 flex-shrink-0">
+                Add
+            </button>
+        </div>
+    `;
+
+            // Render modal content
+            content.innerHTML = `
+        <p><strong>ID:</strong> ${data.cour.id}</p>
+        <p><strong>Name:</strong> ${data.cour.name}</p>
+        <p><strong>Category:</strong> ${data.cour.category}</p>
+        <p><strong>Max Capacity:</strong> ${data.cour.max}</p>
+        <p><strong>Sessions:</strong> ${data.cour.session_count}</p>
+        <p><strong>Equipment Count:</strong> ${data.cour.equipment_count}</p>
+        <hr>
+        <p><strong>Time Slots:</strong></p>
+        ${timeList}
+        <hr>
+        <p><strong>Equipment:</strong></p>
+        ${equipmentList}
+    `;
+
+            document.getElementById('viewCourModal').classList.remove('hidden');
+        }
+
+        // Combined function: fetch and render
+        async function viewCour(cour_id) {
+            const data = await getCourDetail(cour_id);
+            if (data) {
+                renderCourDetail(data);
+            } else {
+                alert("Failed to load course details.");
+            }
+        }
+
+
+        function deleteTimeSlot(id) {
+            if (!confirm("Are you sure you want to delete this time slot?")) return;
+
+            fetch('./../logic/cour_api.php', {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    },
+                    body: `action=delete_time&id=${id}`
+                })
                 .then(res => res.json())
                 .then(data => {
-                    data = data.data
-                    console.log(data);
-
-                    let equipmentList = 'None';
-                    if (data.cour_equipment.length > 0) {
-                        equipmentList = '<ul>' + data.cour_equipment.map(eq =>
-                            `<li>
-                        <strong>${eq.name}</strong> | Type: ${eq.type} | Status: ${eq.status}
-                    </li>`
-                        ).join('') + '</ul>';
+                    if (data.status === 'success') {
+                        alert(data.message);
+                        document.getElementById(`timeSlot-${id}`).remove();
+                        loadDashboardStats();
+                        loadCours();
+                    } else {
+                        alert("Error: " + data.message);
                     }
-
-                    // Format time slots
-                    let timeList = 'Not specified';
-                    if (data.cour_time.length > 0) {
-                        timeList = '<ul>' + data.cour_time.map(slot =>
-                            `<li>${slot.day} | ${slot.start_time} | ${slot.time_in_minutes} min</li>`
-                        ).join('') + '</ul>';
-                    }
-                    content.innerHTML = `
-                        <p><strong>ID:</strong> ${cour.id}</p>
-                        <p><strong>Name:</strong> ${cour.name}</p>
-                        <p><strong>Category:</strong> ${cour.category}</p>
-                        <p><strong>Max Capacity:</strong> ${cour.max}</p>
-                        <p><strong>Sessions:</strong> ${cour.session_count}</p>
-                        <p><strong>Equipment Count:</strong> ${cour.equipment_count}</p>
-                        <hr>
-                        <p><strong>Time Slots:</strong></p>
-                        ${timeList}
-                        <hr>
-                        <p><strong>Equipment:</strong></p>
-                        ${equipmentList}
-                    `;
-
-                    document.getElementById('viewCourModal').classList.remove('hidden');
                 })
-                .catch(err => console.error("Failed to load types and statuses:", err));
+                .catch(err => console.error(err));
+        }
+
+        // Add a new time slot
+        function addTimeSlot(cour_id) {
+            const day = document.getElementById('newDaySelect').value;
+            const startTime = document.getElementById('newStartTime').value;
+            const duration = document.getElementById('newDuration').value;
+
+            console.log(day, startTime, duration, cour_id);
+
+            if (!day || !startTime || !duration || !cour_id) {
+                alert("Please fill all fields");
+                return;
+            }
+
+            // console.log(day, startTime, duration, cour_id);
+
+            fetch('./../logic/cour_api.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    },
+                    body: `action=add_time&day=${encodeURIComponent(day)}&start_time=${encodeURIComponent(startTime)}&time_in_minutes=${encodeURIComponent(duration)}&cour_id=${encodeURIComponent(cour_id)}`
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        alert(data.message);
+                        viewCour(cour_id);
+                        loadCours();
+                        loadDashboardStats();
+                    } else {
+                        alert("Error: " + data.message);
+                    }
+                })
+                .catch(err => console.error(err));
         }
 
         function editCour(cour) {
@@ -586,7 +700,7 @@ if (!isset($_SESSION['user_id'])) {
                                 <button onclick='deleteCour(${item.id})' class="bg-red-500 text-white px-3 py-1 rounded text-sm hover:bg-red-600">Delete</button>
                             </td>
                         `;
-                        tr.querySelector('button.view').addEventListener('click', () => viewCour(item));
+                        tr.querySelector('button.view').addEventListener('click', () => viewCour(item.id));
                         tr.querySelector('button.edit').addEventListener('click', () => editCour(item));
 
 

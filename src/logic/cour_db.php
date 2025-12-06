@@ -2,6 +2,35 @@
 include __DIR__ . '/../config/db.php';
 
 
+function addCoursTime($day, $start_time, $time_in_minutes, $cour_id)
+{
+    global $conn;
+    try {
+        $stmt = $conn->prepare("INSERT INTO cour_time (day, start_time, time_in_minutes, cour_id) VALUES (?, ?, ?, ?)");
+        $stmt->bind_param("ssii", $day, $start_time, $time_in_minutes, $cour_id); // s = string, i = integer
+        $stmt->execute();
+        return ["status" => "success", "message" => "Cours time created successfully"];
+    } catch (Exception $e) {
+        error_log("AddCoursTime Error: " . $e->getMessage());
+        return ["status" => "error", "message" => "Failed to create cours time"];
+    }
+}
+
+
+function deleteCoursTime($id)
+{
+    global $conn;
+    try {
+        $stmt = $conn->prepare("DELETE FROM cour_time WHERE id = ?");
+        $stmt->bind_param("i", $id);
+        $stmt->execute();
+        return ["status" => "success", "message" => "Cours time deleted successfully"];
+    } catch (Exception $e) {
+        error_log("CreateEquipment Error: " . $e->getMessage());
+        return ["status" => "error", "message" => "Failed to delete cours time"];
+    }
+}
+
 function createCours($name, $category_id, $max)
 {
     global $conn;
@@ -101,6 +130,27 @@ function getCoursById($id)
     try {
         global $conn;
 
+        $sqlTime = "SELECT 
+            c.id,
+            c.name,
+            c.max,
+            cc.name AS category,
+            cc.id AS category_id,
+            COUNT(DISTINCT ce.id) AS equipment_count,
+            COUNT(DISTINCT ct.id) AS session_count
+            FROM cours c
+            INNER JOIN cour_category cc ON c.category_id = cc.id
+            LEFT JOIN cour_equipment ce ON c.id = ce.cour_id
+            LEFT JOIN cour_time ct ON c.id = ct.cour_id
+            WHERE c.id = ?
+            GROUP BY c.id, c.name, c.max, cc.name, cc.id
+        ";
+
+        $stmtTime = $conn->prepare($sqlTime);
+        $stmtTime->bind_param("i", $id);
+        $stmtTime->execute();
+        $coursResult = $stmtTime->get_result()->fetch_assoc();
+
         $sqlTime = "SELECT * FROM cour_time WHERE cour_id = ?";
         $stmtTime = $conn->prepare($sqlTime);
         $stmtTime->bind_param("i", $id);
@@ -127,7 +177,7 @@ function getCoursById($id)
         return [
             "status" => "success",
             "data" => [
-                // "cours" => $coursResult,
+                "cour" => $coursResult,
                 "cour_time" => $timeResult,
                 "cour_equipment" => $equipResult
             ]
