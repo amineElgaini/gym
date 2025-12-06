@@ -5,6 +5,7 @@ error_reporting(E_ALL);
 
 header('Content-Type: application/json');
 
+
 $method = $_SERVER['REQUEST_METHOD'];
 
 if ($method === 'POST') {
@@ -24,17 +25,27 @@ if ($method === 'POST') {
 }
 
 if ($method === 'GET') {
+    // Fetch equipment types or statuses
+    if (isset($_GET['action']) && $_GET['action'] === 'types_status') {
+        $result = getEquipementsTypeAndStatus();
+        echo json_encode($result);
+        exit;
+    }
+
+    // Fetch single equipment
     if (isset($_GET['id'])) {
         $id = intval($_GET['id']);
         $result = getEquipementById($id);
         echo json_encode($result);
         exit;
-    } else {
-        $result = getAllEquipements();
-        echo json_encode($result);
-        exit;
     }
+
+    // Fetch all equipments
+    $result = getAllEquipements();
+    echo json_encode($result);
+    exit;
 }
+
 
 if ($method === 'PUT') {
     parse_str(file_get_contents("php://input"), $putData);

@@ -5,9 +5,7 @@ if (!isset($_SESSION['user_id'])) {
     exit;
 }
 
-include './../logic/equipement_db.php';
 include './../logic/dashboard.php';
-$select = getEquipementsTypeAndStatus();
 
 ?>
 
@@ -120,7 +118,9 @@ $select = getEquipementsTypeAndStatus();
                 </div>
                 <div>
                     <label class="block text-sm font-medium mb-1">Category</label>
-                    <input type="text" id="editCourCategory" name="category" class="w-full border px-3 py-2 rounded" required>
+                    <select id="editCategorySelect" name="category_id" class="w-full border px-3 py-2 rounded" required>
+                        <option value="">Select Category</option>
+                    </select>
                 </div>
                 <div>
                     <label class="block text-sm font-medium mb-1">Max Capacity</label>
@@ -145,7 +145,9 @@ $select = getEquipementsTypeAndStatus();
                 </div>
                 <div>
                     <label class="block text-sm font-medium mb-1">Category</label>
-                    <input type="text" name="category" class="w-full border px-3 py-2 rounded" required>
+                    <select id="createCategorySelect" name="category_id" class="w-full border px-3 py-2 rounded" required>
+                        <option value="">Select Category</option>
+                    </select>
                 </div>
                 <div>
                     <label class="block text-sm font-medium mb-1">Max Capacity</label>
@@ -184,9 +186,6 @@ $select = getEquipementsTypeAndStatus();
                     <label class="block text-sm font-medium mb-1">Type</label>
                     <select id="editEquipType" name="type_id" class="w-full border px-3 py-2 rounded" required>
                         <option value="">Select Type</option>
-                        <?php foreach ($select['data']['types'] as  $type): ?>
-                            <option value="<?= $type['id'] ?>"><?= $type['name'] ?></option>
-                        <?php endforeach; ?>
                     </select>
                 </div>
 
@@ -194,9 +193,6 @@ $select = getEquipementsTypeAndStatus();
                     <label class="block text-sm font-medium mb-1">Status</label>
                     <select id="editEquipStatus" name="status_id" class="w-full border px-3 py-2 rounded" required>
                         <option value="">Select Status</option>
-                        <?php foreach ($select['data']['statuses']  as $status): ?>
-                            <option value="<?= $status['id'] ?>"><?= $status['name'] ?></option>
-                        <?php endforeach; ?>
                     </select>
                 </div>
 
@@ -225,21 +221,15 @@ $select = getEquipementsTypeAndStatus();
 
                 <div>
                     <label class="block text-sm font-medium mb-1">Type</label>
-                    <select name="type_id" class="w-full border px-3 py-2 rounded" required>
+                    <select id="createEquipType" name="type_id" class="w-full border px-3 py-2 rounded" required>
                         <option value="">Select Type</option>
-                        <?php foreach ($select['data']['types'] as  $type): ?>
-                            <option value="<?= $type['id'] ?>"><?= $type['name'] ?></option>
-                        <?php endforeach; ?>
                     </select>
                 </div>
 
                 <div>
                     <label class="block text-sm font-medium mb-1">Status</label>
-                    <select name="status_id" class="w-full border px-3 py-2 rounded" required>
+                    <select id="createEquipStatus" name="status_id" class="w-full border px-3 py-2 rounded" required>
                         <option value="">Select Status</option>
-                        <?php foreach ($select['data']['statuses']  as $status): ?>
-                            <option value="<?= $status['id'] ?>"><?= $status['name'] ?></option>
-                        <?php endforeach; ?>
                     </select>
                 </div>
 
@@ -305,7 +295,7 @@ $select = getEquipementsTypeAndStatus();
         function editCour(cour) {
             document.getElementById('editCourId').value = cour.id;
             document.getElementById('editCourName').value = cour.name;
-            document.getElementById('editCourCategory').value = cour.category;
+            document.getElementById('editCategorySelect').value = cour.category_id;
             document.getElementById('editCourMax').value = cour.max;
             document.getElementById('editCourModal').classList.remove('hidden');
         }
@@ -392,20 +382,74 @@ $select = getEquipementsTypeAndStatus();
             }
         }
 
-        // Form Submissions
+
         document.getElementById('editCourForm').addEventListener('submit', function(e) {
             e.preventDefault();
-            // Add your update logic here
-            console.log('Update course:', new FormData(this));
-            closeModal('editCourModal');
+
+            console.log("d");
+            const form = e.target;
+            const formData = new FormData(form);
+            // const id = formData.get('id');
+            console.log([...formData]);
+            
+
+            fetch('./../logic/cour_api.php', {
+                    method: 'PUT',
+                    headers: {
+                        "Content-Type": "application/x-www-form-urlencoded"
+                    },
+                    body: new URLSearchParams(formData)
+                })
+                .then(res => res.json())
+                .then(data => {
+                    console.log(data);
+
+                    if (data.status === "success") {
+                        alert("Course updated successfully!");
+
+                        closeModal('editCourModal');
+                        form.reset();
+                        loadCours();
+                    } else {
+                        alert(data.message || "Update failed!");
+                    }
+                })
+                .catch(error => {
+                    console.error("Update error:", error);
+                    alert("Something went wrong!");
+                });
         });
+
 
         document.getElementById('addCourForm').addEventListener('submit', function(e) {
             e.preventDefault();
-            // Add your create logic here
-            console.log('Add course:', new FormData(this));
-            closeModal('addCourModal');
+
+            const form = this;
+            const formData = new FormData(form);
+
+            fetch('./../logic/cour_api.php', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(res => res.json())
+                .then(data => {
+                    console.log("Server Response:", data);
+
+                    if (data.status === "success") {
+                        alert("Cour added successfully!");
+                        closeModal('addCourModal');
+                        form.reset(); // Clear the form
+                        loadCours(); // Refresh table if applied
+                    } else {
+                        alert("Error: " + (data.message ?? "Failed to add cour"));
+                    }
+                })
+                .catch(err => {
+                    console.error("Error:", err);
+                    alert("Something went wrong!");
+                });
         });
+
 
         document.getElementById('editEquipmentForm').addEventListener('submit', function(e) {
             e.preventDefault();
@@ -417,6 +461,8 @@ $select = getEquipementsTypeAndStatus();
             formData.forEach((value, key) => {
                 data[key] = value;
             });
+
+            console.log(data);
 
             fetch('/logic/equipement_api.php', {
                     method: 'PUT',
@@ -496,11 +542,10 @@ $select = getEquipementsTypeAndStatus();
                             <button class="edit bg-yellow-500 text-white px-3 py-1 rounded text-sm hover:bg-yellow-600">Edit</button>
                             <button onclick='deleteEquipment(${item.id})' class="bg-red-500 text-white px-3 py-1 rounded text-sm hover:bg-red-600">Delete</button>
                             </td>
-                            `;
-                            // <button onclick='viewEquipment(${item.id})' class="bg-green-500 text-white px-3 py-1 rounded text-sm hover:bg-green-600">View</button>
+                        `;
+                        // <button onclick='viewEquipment(${item.id})' class="bg-green-500 text-white px-3 py-1 rounded text-sm hover:bg-green-600">View</button>
 
                         tr.querySelector('button.edit').addEventListener('click', () => editEquipment(item));
-
 
                         tbody.appendChild(tr);
                     });
@@ -531,18 +576,92 @@ $select = getEquipementsTypeAndStatus();
                             <td class="border px-4 py-2">${item.equipment_count}</td>
                             <td class="border px-4 py-2">
                                 <button onclick='viewCour(${item.id})' class="bg-green-500 text-white px-3 py-1 rounded text-sm hover:bg-green-600">View</button>
-                                <button onclick='editCour(${item.id})' class="bg-yellow-500 text-white px-3 py-1 rounded text-sm hover:bg-yellow-600">Edit</button>
+                                <button class="edit bg-yellow-500 text-white px-3 py-1 rounded text-sm hover:bg-yellow-600">Edit</button>
                                 <button onclick='deleteCour(${item.id})' class="bg-red-500 text-white px-3 py-1 rounded text-sm hover:bg-red-600">Delete</button>
                             </td>
                         `;
+                        tr.querySelector('button.edit').addEventListener('click', () => editCour(item));
+
 
                         tbody.appendChild(tr);
                     });
                 })
                 .catch(err => console.error("Error loading equipments:", err));
         }
+
+        function loadTypesStatus() {
+            fetch('./../logic/equipement_api.php?action=types_status')
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status !== "success") return;
+
+                    const EditTypeSelect = document.getElementById('editEquipType');
+                    const EditStatusSelect = document.getElementById('editEquipStatus');
+
+                    const CreateTypeSelect = document.getElementById('createEquipType');
+                    const CreateStatusSelect = document.getElementById('createEquipStatus');
+
+                    EditTypeSelect.innerHTML = '<option value="">Select Type</option>';
+                    EditStatusSelect.innerHTML = '<option value="">Select Status</option>';
+
+                    CreateTypeSelect.innerHTML = '<option value="">Select Type</option>';
+                    CreateStatusSelect.innerHTML = '<option value="">Select Status</option>';
+
+                    data.data.types.forEach(type => {
+                        let opt1 = document.createElement('option');
+                        let opt2 = document.createElement('option');
+
+                        opt1.value = opt2.value = type.id;
+                        opt1.textContent = opt2.textContent = type.name;
+
+                        EditTypeSelect.appendChild(opt1);
+                        CreateTypeSelect.appendChild(opt2);
+                    });
+
+                    data.data.statuses.forEach(status => {
+                        let opt1 = document.createElement('option');
+                        let opt2 = document.createElement('option');
+
+                        opt1.value = opt2.value = status.id;
+                        opt1.textContent = opt2.textContent = status.name;
+
+                        EditStatusSelect.appendChild(opt1);
+                        CreateStatusSelect.appendChild(opt2);
+                    });
+                })
+                .catch(err => console.error("Failed to load types and statuses:", err));
+        };
+
+        function loadCoursCategory() {
+            fetch('./../logic/cour_api.php?action=category')
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status !== "success") return;
+
+                    const EditCategorySelect = document.getElementById('editCategorySelect');
+                    const CreateCategorySelect = document.getElementById('createCategorySelect');
+
+                    EditCategorySelect.innerHTML = '<option value="">Select Type</option>';
+                    CreateCategorySelect.innerHTML = '<option value="">Select Type</option>';
+
+                    data.data.forEach(cat => {
+                        let opt1 = document.createElement('option');
+                        let opt2 = document.createElement('option');
+
+                        opt1.value = opt2.value = cat.id;
+                        opt1.textContent = opt2.textContent = cat.name;
+
+                        EditCategorySelect.appendChild(opt1);
+                        CreateCategorySelect.appendChild(opt2);
+                    });
+                })
+                .catch(err => console.error("Failed to load types and statuses:", err));
+        };
+
         loadEquipments();
         loadCours();
+        loadTypesStatus();
+        loadCoursCategory();
     </script>
 
 </body>

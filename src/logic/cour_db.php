@@ -2,6 +2,38 @@
 include __DIR__ . '/../config/db.php';
 
 
+function createCours($name, $category_id, $max)
+{
+    global $conn;
+    try {
+        $stmt = $conn->prepare("INSERT INTO cours (name, category_id, max) VALUES (?, ?, ?)");
+        $stmt->bind_param("sii", $name, $category_id, $max);
+        $stmt->execute();
+        return ["status" => "success", "message" => "Cours created successfully"];
+    } catch (Exception $e) {
+        error_log("CreateEquipment Error: " . $e->getMessage());
+        return ["status" => "error", "message" => "Failed to create cours"];
+    }
+}
+
+function updateCours($id, $name, $category_id, $max)
+{
+    global $conn;
+    try {
+        $stmt = $conn->prepare("
+            UPDATE cours 
+            SET name = ?, category_id = ?, max = ?
+            WHERE id = ?
+        ");
+        $stmt->bind_param("siii", $name, $category_id, $max, $id);
+        $stmt->execute();
+        return ["status" => "success", "message" => "Cours updated successfully"];
+    } catch (Exception $e) {
+        error_log("UpdateCours Error: " . $e->getMessage());
+        return ["status" => "error", "message" => "Failed to update cours"];
+    }
+}
+
 // ===== Get all equipments =====
 function getCours() {
     global $conn;
@@ -10,6 +42,7 @@ function getCours() {
     c.name,
     c.max,
     cc.name AS category,
+    cc.id AS category_id,
     COUNT(ce.id) AS equipment_count,
     COUNT(ct.id) AS session_count
     FROM cours c
@@ -17,6 +50,21 @@ function getCours() {
     LEFT JOIN cour_equipment ce ON c.id = ce.cour_id
     LEFT JOIN cour_time ct ON c.id = ct.cour_id
     GROUP BY c.id, c.name, c.max, cc.name";
+
+    $result = $conn->query($sql);
+    $cours = [];
+    if ($result->num_rows > 0) {
+        while($row = $result->fetch_assoc()) {
+            $cours[] = $row;
+        }
+    }
+
+    return ["status" => "success", "data" => $cours];
+}
+
+function getCoursCategories() {
+    global $conn;
+    $sql = "SELECT id, name FROM cour_category";
 
     $result = $conn->query($sql);
     $cours = [];
