@@ -4,9 +4,6 @@ if (!isset($_SESSION['user_id'])) {
     header('Location: login.php');
     exit;
 }
-
-include './../logic/dashboard.php';
-
 ?>
 
 <!DOCTYPE html>
@@ -24,22 +21,22 @@ include './../logic/dashboard.php';
     <h1 class="text-3xl font-bold mb-6">Dashboard Salle de Sport</h1>
 
     <!-- Stats Cards -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+    <div class="dashboard-stats grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <div class="bg-white p-6 rounded shadow text-center">
             <h2 class="text-lg font-semibold mb-2">Total Cours</h2>
-            <p class="text-3xl font-bold"><?= $dashboardTotals['total_cours'] ?></p>
+            <p class="total-cours text-3xl font-bold"></p>
         </div>
         <div class="bg-white p-6 rounded shadow text-center">
             <h2 class="text-lg font-semibold mb-2">Total Equipments</h2>
-            <p class="text-3xl font-bold"><?= $dashboardTotals['total_equipments'] ?></p>
+            <p class="total-equipments text-3xl font-bold"></p>
         </div>
         <div class="bg-white p-6 rounded shadow text-center">
             <h2 class="text-lg font-semibold mb-2">Total Sessions</h2>
-            <p class="text-3xl font-bold"><?= $dashboardTotals['total_sessions'] ?></p>
+            <p class="total-sessions text-3xl font-bold"></p>
         </div>
         <div class="bg-white p-6 rounded shadow text-center">
             <h2 class="text-lg font-semibold mb-2">Total Users</h2>
-            <p class="text-3xl font-bold"><?= $dashboardTotals['total_users'] ?></p>
+            <p class="total-users text-3xl font-bold"></p>
         </div>
     </div>
 
@@ -244,7 +241,7 @@ include './../logic/dashboard.php';
             </form>
         </div>
     </div>
-
+    <script src="./../js/utils.js"></script>
     <script>
         // Modal Functions
         function closeModal(modalId) {
@@ -255,16 +252,12 @@ include './../logic/dashboard.php';
         function viewCour(cour) {
             const content = document.getElementById('viewCourContent');
 
-
-
-
-
             fetch('./../logic/cour_api.php?id=' + cour.id)
                 .then(res => res.json())
                 .then(data => {
-                    data = data.data                    
+                    data = data.data
                     console.log(data);
-                    
+
                     let equipmentList = 'None';
                     if (data.cour_equipment.length > 0) {
                         equipmentList = '<ul>' + data.cour_equipment.map(eq =>
@@ -273,7 +266,7 @@ include './../logic/dashboard.php';
                     </li>`
                         ).join('') + '</ul>';
                     }
-        
+
                     // Format time slots
                     let timeList = 'Not specified';
                     if (data.cour_time.length > 0) {
@@ -295,25 +288,11 @@ include './../logic/dashboard.php';
                         <p><strong>Equipment:</strong></p>
                         ${equipmentList}
                     `;
-        
+
                     document.getElementById('viewCourModal').classList.remove('hidden');
                 })
                 .catch(err => console.error("Failed to load types and statuses:", err));
-
-
-
-
-
-
-
-
-
-
-
-            
         }
-
-
 
         function editCour(cour) {
             document.getElementById('editCourId').value = cour.id;
@@ -414,7 +393,7 @@ include './../logic/dashboard.php';
             const formData = new FormData(form);
             // const id = formData.get('id');
             console.log([...formData]);
-            
+
 
             fetch('./../logic/cour_api.php', {
                     method: 'PUT',
@@ -682,12 +661,29 @@ include './../logic/dashboard.php';
                 .catch(err => console.error("Failed to load types and statuses:", err));
         };
 
+        function loadDashboardStats() {
+            fetch('./../logic/dashboard_api.php')
+                .then(res => res.json())
+                .then(result => {
+                    if (result.status === "success") {
+                        const stats = result.data;
+                        animateValue(document.querySelector('.total-cours'), stats.total_cours);
+                        animateValue(document.querySelector('.total-equipments'), stats.total_equipments);
+                        animateValue(document.querySelector('.total-sessions'), stats.total_sessions);
+                        animateValue(document.querySelector('.total-users'), stats.total_users);
+                    } else {
+                        console.error("Failed to load stats:", result.message);
+                    }
+                })
+                .catch(error => console.error("Stats error:", error));
+        }
+
+        loadDashboardStats();
         loadEquipments();
         loadCours();
         loadTypesStatus();
         loadCoursCategory();
     </script>
-
 </body>
 
 </html>
