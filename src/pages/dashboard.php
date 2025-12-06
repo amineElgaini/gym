@@ -322,6 +322,7 @@ if (!isset($_SESSION['user_id'])) {
                         alert(data.message);
                         const row = document.getElementById(`course-row-${id}`);
                         if (row) row.remove();
+                        loadDashboardStats();
                     } else {
                         alert('Error: ' + data.message);
                     }
@@ -375,6 +376,7 @@ if (!isset($_SESSION['user_id'])) {
                             alert('Equipment deleted successfully!');
                             const row = document.getElementById(`equipment-row-${id}`);
                             if (row) row.remove();
+                            loadDashboardStats();
 
                         } else {
                             alert(data.message || 'Failed to delete equipment');
@@ -440,8 +442,9 @@ if (!isset($_SESSION['user_id'])) {
                     if (data.status === "success") {
                         alert("Cour added successfully!");
                         closeModal('addCourModal');
-                        form.reset(); // Clear the form
-                        loadCours(); // Refresh table if applied
+                        form.reset();
+                        loadCours();
+                        loadDashboardStats();
                     } else {
                         alert("Error: " + (data.message ?? "Failed to add cour"));
                     }
@@ -511,6 +514,7 @@ if (!isset($_SESSION['user_id'])) {
                         form.reset();
 
                         loadEquipments();
+                        loadDashboardStats();
 
                         closeModal('addEquipmentModal');
                     } else {
