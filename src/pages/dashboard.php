@@ -255,41 +255,64 @@ include './../logic/dashboard.php';
         function viewCour(cour) {
             const content = document.getElementById('viewCourContent');
 
-            // Format equipment list
-            let equipmentList = 'None';
-            if (Array.isArray(cour.equipment) && cour.equipment.length > 0) {
-                equipmentList = '<ul>' + cour.equipment.map(eq =>
-                    `<li>
-                <strong>${eq.name}</strong> | Type: ${eq.type} | Status: ${eq.status}
-            </li>`
-                ).join('') + '</ul>';
-            }
 
-            // Format time slots
-            let timeList = 'Not specified';
-            if (Array.isArray(cour.time) && cour.time.length > 0) {
-                timeList = '<ul>' + cour.time.map(slot =>
-                    `<li>${slot.day} | ${slot.start_time} | ${slot.time_in_minutes} min</li>`
-                ).join('') + '</ul>';
-            }
 
-            content.innerHTML = `
-                <p><strong>ID:</strong> ${cour.id}</p>
-                <p><strong>Name:</strong> ${cour.name}</p>
-                <p><strong>Category:</strong> ${cour.category}</p>
-                <p><strong>Max Capacity:</strong> ${cour.max}</p>
-                <p><strong>Sessions:</strong> ${cour.session_count}</p>
-                <p><strong>Equipment Count:</strong> ${cour.equipment_count}</p>
-                <hr>
-                <p><strong>Time Slots:</strong></p>
-                ${timeList}
-                <hr>
-                <p><strong>Equipment:</strong></p>
-                ${equipmentList}
-            `;
 
-            document.getElementById('viewCourModal').classList.remove('hidden');
+
+            fetch('./../logic/cour_api.php?id=' + cour.id)
+                .then(res => res.json())
+                .then(data => {
+                    data = data.data                    
+                    console.log(data);
+                    
+                    let equipmentList = 'None';
+                    if (data.cour_equipment.length > 0) {
+                        equipmentList = '<ul>' + data.cour_equipment.map(eq =>
+                            `<li>
+                        <strong>${eq.name}</strong> | Type: ${eq.type} | Status: ${eq.status}
+                    </li>`
+                        ).join('') + '</ul>';
+                    }
+        
+                    // Format time slots
+                    let timeList = 'Not specified';
+                    if (data.cour_time.length > 0) {
+                        timeList = '<ul>' + data.cour_time.map(slot =>
+                            `<li>${slot.day} | ${slot.start_time} | ${slot.time_in_minutes} min</li>`
+                        ).join('') + '</ul>';
+                    }
+                    content.innerHTML = `
+                        <p><strong>ID:</strong> ${cour.id}</p>
+                        <p><strong>Name:</strong> ${cour.name}</p>
+                        <p><strong>Category:</strong> ${cour.category}</p>
+                        <p><strong>Max Capacity:</strong> ${cour.max}</p>
+                        <p><strong>Sessions:</strong> ${cour.session_count}</p>
+                        <p><strong>Equipment Count:</strong> ${cour.equipment_count}</p>
+                        <hr>
+                        <p><strong>Time Slots:</strong></p>
+                        ${timeList}
+                        <hr>
+                        <p><strong>Equipment:</strong></p>
+                        ${equipmentList}
+                    `;
+        
+                    document.getElementById('viewCourModal').classList.remove('hidden');
+                })
+                .catch(err => console.error("Failed to load types and statuses:", err));
+
+
+
+
+
+
+
+
+
+
+
+            
         }
+
 
 
         function editCour(cour) {
@@ -575,11 +598,12 @@ include './../logic/dashboard.php';
                             <td class="border px-4 py-2">${item.session_count}</td>
                             <td class="border px-4 py-2">${item.equipment_count}</td>
                             <td class="border px-4 py-2">
-                                <button onclick='viewCour(${item.id})' class="bg-green-500 text-white px-3 py-1 rounded text-sm hover:bg-green-600">View</button>
+                                <button class="view bg-green-500 text-white px-3 py-1 rounded text-sm hover:bg-green-600">View</button>
                                 <button class="edit bg-yellow-500 text-white px-3 py-1 rounded text-sm hover:bg-yellow-600">Edit</button>
                                 <button onclick='deleteCour(${item.id})' class="bg-red-500 text-white px-3 py-1 rounded text-sm hover:bg-red-600">Delete</button>
                             </td>
                         `;
+                        tr.querySelector('button.view').addEventListener('click', () => viewCour(item));
                         tr.querySelector('button.edit').addEventListener('click', () => editCour(item));
 
 
