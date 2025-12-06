@@ -68,18 +68,19 @@ function getCours()
 {
     global $conn;
     $sql = "SELECT 
-    c.id,
-    c.name,
-    c.max,
-    cc.name AS category,
-    cc.id AS category_id,
-    COUNT(ce.id) AS equipment_count,
-    COUNT(ct.id) AS session_count
-    FROM cours c
-    INNER JOIN cour_category cc ON c.category_id = cc.id
-    LEFT JOIN cour_equipment ce ON c.id = ce.cour_id
-    LEFT JOIN cour_time ct ON c.id = ct.cour_id
-    GROUP BY c.id, c.name, c.max, cc.name";
+            c.id,
+            c.name,
+            c.max,
+            cc.name AS category,
+            cc.id AS category_id,
+            COUNT(DISTINCT ce.id) AS equipment_count,
+            COUNT(DISTINCT ct.id) AS session_count
+            FROM cours c
+            INNER JOIN cour_category cc ON c.category_id = cc.id
+            LEFT JOIN cour_equipment ce ON c.id = ce.cour_id
+            LEFT JOIN cour_time ct ON c.id = ct.cour_id
+            GROUP BY c.id
+        ";
 
     $result = $conn->query($sql);
     $cours = [];
@@ -143,7 +144,7 @@ function getCoursById($id)
             LEFT JOIN cour_equipment ce ON c.id = ce.cour_id
             LEFT JOIN cour_time ct ON c.id = ct.cour_id
             WHERE c.id = ?
-            GROUP BY c.id, c.name, c.max, cc.name, cc.id
+            GROUP BY c.id
         ";
 
         $stmtTime = $conn->prepare($sqlTime);
@@ -159,6 +160,7 @@ function getCoursById($id)
 
         $sqlEquip = "
             SELECT 
+                ce.id,
                 e.name AS name,
                 es.name AS status,
                 et.name AS type
@@ -185,5 +187,40 @@ function getCoursById($id)
     } catch (Exception $e) {
         error_log("GetCour Error: " . $e->getMessage());
         return ["status" => "error", "message" => "Failed to get course data"];
+    }
+}
+
+
+function addEquipmentToCourse($cour_id, $equipment_id)
+{
+    global $conn;
+    try {
+        $stmt = $conn->prepare("
+            INSERT INTO cour_equipment (cour_id, equipment_id) 
+            VALUES (?, ?)
+        ");
+        $stmt->bind_param("ii", $cour_id, $equipment_id);
+        $stmt->execute();
+
+        return ["status" => "success", "message" => "Equipment added successfully"];
+    } catch (Exception $e) {
+        error_log("AddEquipment Error: " . $e->getMessage());
+        return ["status" => "error", "message" => "Failed to add equipment"];
+    }
+}
+
+function deleteEquipmentFromCourse($id)
+{
+    global $conn;
+    try {
+        // return ["status" => "success", "message" => $id];
+        $stmt = $conn->prepare("DELETE FROM cour_equipment WHERE id = ?");
+        $stmt->bind_param("i", $id);
+        $stmt->execute();
+
+        return ["status" => "success", "message" => "Equipment removed successfully"];
+    } catch (Exception $e) {
+        error_log("DeleteEquipment Error: " . $e->getMessage());
+        return ["status" => "error", "message" => "Failed to delete equipment"];
     }
 }

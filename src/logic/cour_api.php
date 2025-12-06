@@ -24,6 +24,12 @@ if ($method === 'POST') {
         exit;
     }
 
+    // ADD EQUIPMENT TO COURSE
+    if ($method === 'POST' && isset($_POST['equip_id'], $_POST['cour_id'])) {
+        echo json_encode(addEquipmentToCourse(intval($_POST['cour_id']), intval($_POST['equip_id'])));
+        exit;
+    }
+
     // POST for creating a new course
     $name = trim($_POST['name'] ?? '');
     $category_id = intval($_POST['category_id'] ?? 0);
@@ -74,10 +80,14 @@ if ($method === 'PUT') {
 
 if ($method === 'DELETE') {
     parse_str(file_get_contents("php://input"), $deleteData);
+
+    if (isset($deleteData['equip_id'])) {
+        echo json_encode(deleteEquipmentFromCourse(intval($deleteData['equip_id'])));
+        exit;
+    }
     
     // DELETE for cours time
     if (isset($deleteData['action']) && $deleteData['action'] === 'delete_time') {
-        // echo json_encode(["status" => "error", "message" => "Invalid ID"]);
         $id = intval($deleteData['id'] ?? 0);
         if ($id <= 0) {
             echo json_encode(["status" => "error", "message" => "Invalid ID"]);

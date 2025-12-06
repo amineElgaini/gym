@@ -96,7 +96,7 @@ if (!isset($_SESSION['user_id'])) {
     <!-- Course Modals -->
     <!-- View Course Modal -->
     <div id="viewCourModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-        <div class="bg-white p-6 rounded-lg w-96">
+        <div class="bg-white p-6 rounded-lg w-fit max-h-[80vh] overflow-y-auto">
             <h3 class="text-xl font-bold mb-4">Course Details</h3>
             <div id="viewCourContent" class="space-y-2"></div>
             <button onclick="closeModal('viewCourModal')" class="mt-4 bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600">Close</button>
@@ -243,6 +243,7 @@ if (!isset($_SESSION['user_id'])) {
     </div>
     <script src="./../js/utils.js"></script>
     <script>
+        let equipments = [];
         // Modal Functions
         function closeModal(modalId) {
             document.getElementById(modalId).classList.add('hidden');
@@ -264,19 +265,49 @@ if (!isset($_SESSION['user_id'])) {
 
         // Render course details in the modal
         function renderCourDetail(data) {
-            console.log("d", data);
-            
+
             const content = document.getElementById('viewCourContent');
 
+            console.log(data);
+            
+
             // Equipment list
-            let equipmentList = 'None';
+            let equipmentList = '';
             if (data.cour_equipment.length > 0) {
-                equipmentList = '<ul>' + data.cour_equipment.map(eq =>
-                    `<li>
-                <strong>${eq.name}</strong> | Type: ${eq.type} | Status: ${eq.status}
-            </li>`
-                ).join('') + '</ul>';
+                equipmentList = '<ul class="space-y-2">';
+                data.cour_equipment.forEach(eq => {
+                    equipmentList += `
+                        <li id="equip-${eq.id}" class="flex items-center justify-between border p-2 rounded">
+                            <span><strong>${eq.name}</strong> | Type: ${eq.type} | Status: ${eq.status}</span>
+                            <button onclick="deleteCourEquipment(${data.cour.id}, ${eq.id})" 
+                                    class="bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600 text-sm">
+                                Delete
+                            </button>
+                        </li>
+                    `;
+                });
+                equipmentList += '</ul>';
             }
+
+            // Add new equipment form
+            equipmentList += `
+                <div class="mt-4 flex flex-wrap space-x-2 items-center">
+                    <select id="newEquipSelect" class="border px-2 py-1 rounded flex-shrink-0">
+                        <option value="">Select Equipment</option>
+                        ${equipments.map(eq => `
+                            <option value="${eq.id}">
+                                ${eq.name} | ${eq.type} | ${eq.status}
+                            </option>
+                        `).join('')}
+                    </select>
+
+                    <button onclick="addEquipmentToCourse(${data.cour.id})"
+                            class="bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600 flex-shrink-0">
+                        Add
+                    </button>
+                </div>
+            `;
+
 
             // Time slots
             let timeList = '';
@@ -298,25 +329,25 @@ if (!isset($_SESSION['user_id'])) {
 
             // Add new time slot form
             timeList += `
-        <div class="mt-4 flex flex-wrap space-x-2 items-center">
-            <select id="newDaySelect" class="border px-2 py-1 rounded flex-shrink-0">
-                <option value="">Select Day</option>
-                <option value="Monday">Monday</option>
-                <option value="Tuesday">Tuesday</option>
-                <option value="Wednesday">Wednesday</option>
-                <option value="Thursday">Thursday</option>
-                <option value="Friday">Friday</option>
-                <option value="Saturday">Saturday</option>
-                <option value="Sunday">Sunday</option>
-            </select>
+                <div class="mt-4 flex flex-wrap space-x-2 items-center">
+                    <select id="newDaySelect" class="border px-2 py-1 rounded flex-shrink-0">
+                        <option value="">Select Day</option>
+                        <option value="Monday">Monday</option>
+                        <option value="Tuesday">Tuesday</option>
+                        <option value="Wednesday">Wednesday</option>
+                        <option value="Thursday">Thursday</option>
+                        <option value="Friday">Friday</option>
+                        <option value="Saturday">Saturday</option>
+                        <option value="Sunday">Sunday</option>
+                    </select>
 
-            <input type="time" id="newStartTime" placeholder="Start Time" class="border px-2 py-1 rounded flex-shrink-0" />
-            <input type="number" id="newDuration" placeholder="Duration (minutes)" class="border px-2 py-1 rounded flex-shrink-0" />
-            <button onclick="addTimeSlot(${data.cour.id})" class="bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600 flex-shrink-0">
-                Add
-            </button>
-        </div>
-    `;
+                    <input type="time" id="newStartTime" placeholder="Start Time" class="border px-2 py-1 rounded flex-shrink-0" />
+                    <input type="number" id="newDuration" placeholder="Duration (minutes)" class="border px-2 py-1 rounded flex-shrink-0" />
+                    <button onclick="addTimeSlot(${data.cour.id})" class="bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600 flex-shrink-0">
+                        Add
+                    </button>
+                </div>
+            `;
 
             // Render modal content
             content.innerHTML = `
@@ -346,6 +377,67 @@ if (!isset($_SESSION['user_id'])) {
                 alert("Failed to load course details.");
             }
         }
+
+
+
+        function deleteCourEquipment(cour_id, equip_id) {
+            if (!confirm("Are you sure you want to remove this equipment?")) return;
+
+            fetch("./../logic/cour_api.php", {
+                    method: "DELETE",
+                    headers: {
+                        "Content-Type": "application/x-www-form-urlencoded"
+                    },
+                    body: `equip_id=${equip_id}`
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status === "success") {
+                        alert(data.message);
+
+                        document.getElementById(`equip-${equip_id}`).remove();
+                        viewCour(cour_id);
+                        loadCours();
+                        loadDashboardStats();
+
+                    } else {
+                        alert(data.message);
+                    }
+                })
+                .catch(err => console.error("Delete equipment error:", err));
+        }
+
+        function addEquipmentToCourse(cour_id) {
+            const equipSelect = document.getElementById("newEquipSelect");
+            const equipId = equipSelect.value;
+
+            if (!equipId) {
+                alert("Select equipment");
+                return;
+            }
+
+
+            fetch("./../logic/cour_api.php", {
+                    method: "POST",
+                    body: new URLSearchParams({
+                        equip_id: equipId,
+                        cour_id: cour_id
+                    })
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status === "success") {
+                        viewCour(cour_id);
+                        loadCours();
+                        loadDashboardStats();
+
+                    } else {
+                        alert(data.message);
+                    }
+                })
+                .catch(err => console.error("Add equipment error:", err));
+        }
+
 
 
         function deleteTimeSlot(id) {
@@ -643,7 +735,7 @@ if (!isset($_SESSION['user_id'])) {
                 .then(res => res.json())
                 .then(data => {
                     if (data.status !== "success") return;
-
+                    equipments = data.data;
                     const tbody = document.querySelector('#equipmentTable tbody');
                     tbody.innerHTML = "";
 
@@ -678,6 +770,7 @@ if (!isset($_SESSION['user_id'])) {
                 .then(res => res.json())
                 .then(data => {
                     if (data.status !== "success") return;
+                    
 
                     const tbody = document.querySelector('#courTable tbody');
                     tbody.innerHTML = "";

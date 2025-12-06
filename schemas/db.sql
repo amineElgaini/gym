@@ -76,7 +76,7 @@ CREATE TABLE cours (
 -- Create cour_equipment table
 CREATE TABLE cour_equipment (
     id INT PRIMARY KEY AUTO_INCREMENT,
-    name VARCHAR(100) NOT NULL,
+    -- name VARCHAR(100) NOT NULL,
     cour_id INT,
     equipment_id INT,
     FOREIGN KEY (cour_id) REFERENCES cours(id) ON DELETE CASCADE,
@@ -143,10 +143,10 @@ INSERT INTO cour_time (day, start_time, time_in_minutes, cour_id) VALUES
 ('Saturday', '09:00:00', 60, 1),
 ('Saturday', '11:00:00', 45, 2);
 
-INSERT INTO cour_equipment (name, cour_id, equipment_id) VALUES
-('Yoga Mat Required', 1, 3),
-('Treadmill Station', 2, 1),
-('Weight Set', 3, 2),
-('Yoga Mat Required', 4, 3),
-('Spin Bike', 5, 1),
-('Full Equipment', 6, 2);
+INSERT INTO cour_equipment (cour_id, equipment_id) VALUES
+(1, 3),
+(2, 1),
+(3, 2),
+(4, 3),
+(5, 1),
+(6, 2);
